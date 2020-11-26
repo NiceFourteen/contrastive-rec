@@ -56,12 +56,27 @@ def get_negative_mask(batch_size):
     return negative_mask
 
 
+def test_cat():
+    tensor_a = torch.randn(5, 3)
+    tensor_b = torch.randn(9, 3)
+    ten = tensor_a - tensor_b
+    ten_cat = torch.cat([tensor_a, tensor_b], dim=0)
+    a_norm = torch.pow(tensor_a, 2)
+    print(a_norm)
+
+
 if __name__ == '__main__':
     """"""
-    mask = get_negative_mask(64)
-    # loss_main = test_positive_loss()
-    item_set = torch.load('..\\dataset\\amazon\\item_set.pt')
-    item_tensor = torch.from_numpy(item_set)
-    mask_info = torch.masked_select(item_tensor, mask)
-    print(mask_info)
+    x = torch.randn(2, 3)
+    x_pos = torch.randn(2, 3)
+    x_u = x.unsqueeze(1)
+    y = torch.randn(4, 3)
+
+    z = x_u - y
+    # result1 = torch.einsum('ni, ni -> n', [x, x_pos])
+    results = torch.einsum('nij, nij -> ni', [z, z])
+    result_sum = torch.sum(results, dim=1)
+    print(results)
+    print(result_sum)
+
 

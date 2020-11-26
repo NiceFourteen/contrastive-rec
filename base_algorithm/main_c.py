@@ -9,21 +9,17 @@ parser.add_argument('--ih', '--if_hard', default=False, type=bool,
                     metavar='IH', help='whether use hard negative samples', dest='ih')
 parser.add_argument('--dim', '--dim_fea', default=64, type=int,
                     metavar='dim', help='the dim for item and user', dest='dim')
-parser.add_argument('--lr_bpr', '--learning_rate_bpr', default=0.001, type=float,
-                    metavar='LR_BPR', help='the learning rate for bpr training', dest='lr_bpr')
-parser.add_argument('--wd_bpr', '--weight_decay_bpr', default=0.01, type=float,
-                    metavar='wd_bpr', help='the weight decay for bpr', dest='wd_bpr')
-parser.add_argument('--lr_con', '--learning_rate_con', default=0.001, type=float,
-                    metavar='lr_con', help='the learning rate for contrastive', dest='lr_con')
-parser.add_argument('--wd_con', '--weight_decay_con', default=0.01, type=float,
-                    metavar='wd_con', help='the weight decay for contrastive', dest='wd_con')
+parser.add_argument('--lr', '--learning_rate_bpr', default=0.001, type=float,
+                    metavar='LR', help='the learning rate for bpr training', dest='lr')
+parser.add_argument('--reg', '--regular', default=0.01, type=float,
+                    metavar='reg', help='regularization', dest='reg')
 parser.add_argument('--epochs', '--epoch_number', default=100, type=int,
                     metavar='epochs', help='training epochs', dest='epochs')
 parser.add_argument('--dp', '--data_path', default='..\\dataset\\amazon\\', type=str,
                     metavar='dp', help='the path of dataset', dest='dp')
 parser.add_argument('--gpu', default=0, type=int,
                     metavar='GPU', help='gpu number to use', dest='gpu')
-parser.add_argument('--bsz', default=64, type=int,
+parser.add_argument('--bsz', default=128, type=int,
                     metavar='bsz', help='batch_size', dest='bsz')
 """
 如果是随机选择negative samples，那么neg__num不能为None
