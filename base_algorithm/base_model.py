@@ -24,6 +24,24 @@ class Model(nn.Module):
             raise Exception('nan')
         return results
 
+    def compute_results_cold(self, u, test_samples):
+        u = u.cuda()
+        if type(test_samples) != torch.Tensor:
+            test_samples = torch.from_numpy(test_samples)
+        test_samples = test_samples.cuda()
+        rs = []
+        for i in test_samples.T:
+            # lt = torch.LongTensor(i)
+            lt = i
+            res_temp = self.predict_cold(u, lt).detach()
+            res_temp = res_temp.cpu()
+            res_temp = res_temp.numpy()
+            rs.append(res_temp)
+        results = np.vstack(rs).T
+        if np.isnan(results).any():
+            raise Exception('nan')
+        return results
+
     @staticmethod
     def auc_calculate(labels, pre_ds):
         print('.auc')
@@ -94,7 +112,7 @@ class Model(nn.Module):
         print('----- test_cold -----begin-----')
         u = self.data_list.test_cold_u
         u = u.cuda()
-        results = self.compute_results(u, self.data_list.test_cold_samples)
+        results = self.compute_results_cold(u, self.data_list.test_cold_samples)
         scores = self.compute_scores(self.data_list.test_cold_gt, results)
         self.__logscore(scores)
         print('----- test_cold -----end-----')
@@ -106,6 +124,9 @@ class Model(nn.Module):
         raise Exception('no implementation')
 
     def predict(self):
+        raise Exception('no implementation')
+
+    def predict_cold(self):
         raise Exception('no implementation')
 
     def save(self):

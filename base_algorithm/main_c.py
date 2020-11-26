@@ -9,11 +9,11 @@ parser.add_argument('--ih', '--if_hard', default=False, type=bool,
                     metavar='IH', help='whether use hard negative samples', dest='ih')
 parser.add_argument('--dim', '--dim_fea', default=64, type=int,
                     metavar='dim', help='the dim for item and user', dest='dim')
-parser.add_argument('--lr_bpr', '--learning_rate_bpr', default=0.01, type=float,
+parser.add_argument('--lr_bpr', '--learning_rate_bpr', default=0.001, type=float,
                     metavar='LR_BPR', help='the learning rate for bpr training', dest='lr_bpr')
 parser.add_argument('--wd_bpr', '--weight_decay_bpr', default=0.01, type=float,
                     metavar='wd_bpr', help='the weight decay for bpr', dest='wd_bpr')
-parser.add_argument('--lr_con', '--learning_rate_con', default=0.01, type=float,
+parser.add_argument('--lr_con', '--learning_rate_con', default=0.001, type=float,
                     metavar='lr_con', help='the learning rate for contrastive', dest='lr_con')
 parser.add_argument('--wd_con', '--weight_decay_con', default=0.01, type=float,
                     metavar='wd_con', help='the weight decay for contrastive', dest='wd_con')

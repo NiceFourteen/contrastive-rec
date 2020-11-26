@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as fun
 from .base_model import Model
-import tqdm
 
 
 # 没有想到好的名字就用contrastive recommendation来代表这个model吧
@@ -48,6 +47,17 @@ class CR(Model):
         p2 = self.item_matrix[iid]
         return torch.sum(p1 * p2, dim=1)
 
+    def predict_cold(self, uid, iid):
+        """
+        uid of user_matrix
+        iid of item_matrix
+        :return:
+        """
+        p1 = self.user_matrix[uid]
+        item_fixed = self.item_mlp(self.item_features)
+        p2 = item_fixed[iid]
+        return torch.sum(p1 * p2, dim=1)
+
     def bpr_loss(self, uid, iid, jid):
         """
         bpr的算法是，对一个用户u求i和j两个item的分数，然后比较更喜欢哪个，
@@ -58,16 +68,40 @@ class CR(Model):
         dev = pre_i - pre_j
         return torch.sum(fun.softplus(-dev))
 
-    def con_loss(self, item_ids, item_fixed):
-        """"""
-        item_feature_v = item_fixed[item_ids]
-        item_embedding_v = self.item_matrix[item_ids]
-        loss = torch.sum(torch.einsum('ij, kj-> ik', [item_embedding_v, item_feature_v]))
-        return loss
+    def con_loss(self, item_fixed, iid, jid):
+        """iid 作为anchor sample, jid的元素 作为negative samples"""
+        pos_ids = torch.unique(iid)
+        neg_ids = torch.unique(jid)
+        l_pos = torch.einsum('nc, nc -> n', [item_fixed[pos_ids], self.item_matrix[pos_ids]])
+        l_neg = torch.einsum('ij, kj -> ik', [item_fixed[pos_ids], self.item_matrix[neg_ids]])
+        l_pos_exp = torch.exp(l_pos)
+        l_neg_sum = torch.sum(l_neg, dim=1)
+        l_neg_exp = torch.exp(l_neg_sum)
+        temp = l_pos_exp / (l_pos_exp + l_neg_exp)
+        results = torch.sum(-torch.log(temp))
+        # results = torch.sum(temp)
+        return results
+
+    def con_loss_matmul(self, item_fixed, iid, jid):
+        pos_item_ids = torch.unique(iid)
+        neg_item_ids = torch.unique(jid)
+        pos_feature_len = torch.norm(item_fixed[pos_item_ids], dim=1, keepdim=True)
+        pos_item_embedding_len = torch.norm(self.item_matrix[pos_item_ids], dim=1, keepdim=True)
+        neg_item_embedding_len = torch.norm(self.item_matrix[neg_item_ids], dim=1, keepdim=True)
+        pos_score = torch.einsum('nc, nc -> n', [item_fixed[pos_item_ids], self.item_matrix[pos_item_ids]])
+        pos_score = pos_score / (pos_feature_len * pos_item_embedding_len)
+        pos_score = torch.exp(pos_score)
+        neg_score_part1 = torch.matmul(item_fixed[pos_item_ids], self.item_matrix[neg_item_ids].t())
+        neg_score_part2 = torch.matmul(pos_feature_len, neg_item_embedding_len.t())
+        neg_score = neg_score_part1 / neg_score_part2
+        neg_score = torch.exp(neg_score)
+        neg_score = torch.sum(neg_score, dim=1)
+        contrastive_loss = (-torch.log(pos_score / neg_score)).mean()
+        return contrastive_loss
 
     def regs(self, uid, iid, jid):
         # regs:  default value is 0
-        reg = 0
+        reg = 0.01
         uid_v = self.user_matrix[uid]
         iid_v = self.item_matrix[iid]
         jid_v = self.item_matrix[jid]
@@ -82,11 +116,10 @@ class CR(Model):
         print('cr is training')
         lr_bpr = self.args.lr_bpr
         lr_con = self.args.lr_con
-        wd_bpr = self.args.wd_bpr
-        wd_con = self.args.wd_con
         optimizer_bpr = torch.optim.Adagrad([self.user_matrix, self.item_matrix],
                                             lr=lr_bpr, weight_decay=0)
         optimizer_con = torch.optim.SGD(self.item_mlp.parameters(), lr=lr_con, weight_decay=0)
+        optimizer = torch.optim.Adagrad(self.parameters(), lr=lr_bpr, weight_decay=0)
         loop_size = self.sz // self.batch_size
         epochs = self.args.epochs
         for epoch in range(epochs):
@@ -95,41 +128,38 @@ class CR(Model):
             while True:
                 optimizer_bpr.zero_grad()
                 optimizer_con.zero_grad()
+                # optimizer.zero_grad()
                 item_fixed = self.item_mlp(self.item_features)
-                generator_tensors = next(generator)
-                if generator_tensors is None:
-                    break
-                s = generator_tensors[0]
-                sub_item_ids = generator_tensors[1]
+                s = next(generator)
                 if s is None:
-                    break
-                if sub_item_ids is None:
                     break
                 uid, iid, jid = s[:, 0], s[:, 1], s[:, 2]
                 uid = uid.cuda()
                 iid = iid.cuda()
                 jid = jid.cuda()
                 loss_bpr = self.bpr_loss(uid, iid, jid) + self.regs(uid, iid, jid)
-                loss_con = self.con_loss(sub_item_ids, item_fixed)
-                # print(f'=={epoch}=={current_loop}/{loop_size}=====>loss_bpr is {loss_bpr}=====loss_con is {loss_con}')
+                loss_con = self.con_loss(item_fixed, iid, jid)
+                # print(f'=={epoch}=={current_loop}/{loop_size}===>loss_bpr is {loss_bpr}===loss_con is {loss_con}')
+                # loss = loss_con + loss_bpr
                 current_loop += 1
                 loss_bpr.backward()
                 loss_con.backward()
+                # loss.backward()
                 optimizer_bpr.step()
                 optimizer_con.step()
+                # optimizer.step()
             if epoch % 2 == 0:  # and epoch > 1
-
-                print(f'epoch is {epoch}')
+                print(f'=={epoch}===>loss_bpr is {loss_bpr}===loss_con is {loss_con}')
                 self.val(), self.test(), self.test_warm(), self.test_cold()
 
     def sample(self):
         np.random.shuffle(self.data_list.train_list)
         shuffle_item_ids = torch.randperm(self.item_size)
         loop_size = self.sz // self.batch_size
-        item_group_size = self.item_size // loop_size
+        # item_group_size = self.item_size // loop_size
         for i in range(loop_size):
             pairs = []
-            sub_item_ids = shuffle_item_ids[i * item_group_size:(i + 1) * item_group_size]
+            # sub_item_ids = shuffle_item_ids[i * item_group_size:(i + 1) * item_group_size]
             sub_train_list = self.data_list.train_list[i * self.batch_size:(i + 1) * self.batch_size, :]
             for m, j in sub_train_list:
                 m_neg = j
@@ -137,5 +167,5 @@ class CR(Model):
                     m_neg = np.random.randint(self.item_size)
                 pairs.append((m, j, m_neg))
 
-            yield torch.LongTensor(pairs), sub_item_ids
+            yield torch.LongTensor(pairs)  # , sub_item_ids
         yield None

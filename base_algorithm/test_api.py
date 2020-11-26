@@ -32,10 +32,36 @@ def concat_all_gather(tensor):
     return output
 
 
+def test_positive_loss():
+    item_set = torch.load('..\\dataset\\amazon\\item_set.pt')
+    user_set = torch.load('..\\dataset\\amazon\\user_set.pt')
+    item_embedding = torch.nn.Embedding(len(user_set), 64)
+    item_embedding = torch.nn.init.normal_(item_embedding.weight, std=0.01)
+    item_tensor = torch.from_numpy(item_set)
+    iev = (item_embedding[1:10, :]).double()
+    ifv = (item_tensor[1:10, :]).double()
+    loss = torch.einsum('ij, ij -> i', [ifv, iev])
+    loss_exp = torch.exp(loss)
+    print(loss_exp)
+    return loss_exp
+
+
+def get_negative_mask(batch_size):
+    negative_mask = torch.ones((batch_size, 2 * batch_size), dtype=bool)
+    for i in range(batch_size):
+        negative_mask[i, i] = 0
+        negative_mask[i, i + batch_size] = 0
+
+    negative_mask = torch.cat((negative_mask, negative_mask), 0)
+    return negative_mask
+
+
 if __name__ == '__main__':
     """"""
-    matrix = torch.randn(100, 9)
-    batch_size_this = matrix.shape[0]
-    ids = torch.randperm(batch_size_this)
-    x_gather = concat_all_gather(matrix)
-    batch_size_all = x_gather.shape[0]
+    mask = get_negative_mask(64)
+    # loss_main = test_positive_loss()
+    item_set = torch.load('..\\dataset\\amazon\\item_set.pt')
+    item_tensor = torch.from_numpy(item_set)
+    mask_info = torch.masked_select(item_tensor, mask)
+    print(mask_info)
+
