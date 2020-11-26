@@ -119,7 +119,7 @@ class CR(Model):
         optimizer_bpr = torch.optim.Adagrad([self.user_matrix, self.item_matrix],
                                             lr=lr_bpr, weight_decay=0)
         optimizer_con = torch.optim.SGD(self.item_mlp.parameters(), lr=lr_con, weight_decay=0)
-        optimizer = torch.optim.Adagrad(self.parameters(), lr=lr_bpr, weight_decay=0)
+        # optimizer = torch.optim.Adagrad(self.parameters(), lr=lr_bpr, weight_decay=0)
         loop_size = self.sz // self.batch_size
         epochs = self.args.epochs
         for epoch in range(epochs):
