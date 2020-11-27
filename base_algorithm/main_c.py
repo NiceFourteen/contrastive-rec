@@ -9,7 +9,7 @@ parser.add_argument('--ih', '--if_hard', default=False, type=bool,
                     metavar='IH', help='whether use hard negative samples', dest='ih')
 parser.add_argument('--dim', '--dim_fea', default=64, type=int,
                     metavar='dim', help='the dim for item and user', dest='dim')
-parser.add_argument('--lr', '--learning_rate_bpr', default=0.001, type=float,
+parser.add_argument('--lr', '--learning_rate_bpr', default=0.01, type=float,
                     metavar='LR', help='the learning rate for bpr training', dest='lr')
 parser.add_argument('--reg', '--regular', default=0.01, type=float,
                     metavar='reg', help='regularization', dest='reg')
@@ -19,7 +19,7 @@ parser.add_argument('--dp', '--data_path', default='..\\dataset\\amazon\\', type
                     metavar='dp', help='the path of dataset', dest='dp')
 parser.add_argument('--gpu', default=0, type=int,
                     metavar='GPU', help='gpu number to use', dest='gpu')
-parser.add_argument('--bsz', default=128, type=int,
+parser.add_argument('--bsz', default=256, type=int,
                     metavar='bsz', help='batch_size', dest='bsz')
 """
 如果是随机选择negative samples，那么neg__num不能为None
