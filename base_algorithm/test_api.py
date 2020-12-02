@@ -1,4 +1,6 @@
 import torch
+from tensorboardX import SummaryWriter
+import torchvision
 
 
 def test_sequential():
@@ -67,16 +69,10 @@ def test_cat():
 
 if __name__ == '__main__':
     """"""
-    x = torch.randn(2, 3)
-    x_pos = torch.randn(2, 3)
-    x_u = x.unsqueeze(1)
-    y = torch.randn(4, 3)
+    tensor_a = torch.randn(5, 3)
+    tensor_b = torch.randn(9, 3)
+    a, _ = tensor_a.view(2, -1)
 
-    z = x_u - y
-    # result1 = torch.einsum('ni, ni -> n', [x, x_pos])
-    results = torch.einsum('nij, nij -> ni', [z, z])
-    result_sum = torch.sum(results, dim=1)
-    print(results)
-    print(result_sum)
+    print(a)
 
 

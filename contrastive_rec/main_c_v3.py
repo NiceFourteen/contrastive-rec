@@ -2,7 +2,7 @@ import argparse
 import torch
 import os
 from base_algorithm.load import LoadData
-from base_algorithm.cr import CR
+from contrastive_rec.cr_v3 import CR
 
 parser = argparse.ArgumentParser(description='contrastive training for recommendation')
 parser.add_argument('--ih', '--if_hard', default=False, type=bool,
@@ -13,13 +13,19 @@ parser.add_argument('--lr', '--learning_rate_bpr', default=0.001, type=float,
                     metavar='LR', help='the learning rate for bpr training', dest='lr')
 parser.add_argument('--reg', '--regular', default=0.01, type=float,
                     metavar='reg', help='regularization', dest='reg')
+parser.add_argument('--con_weight', '--contra_weight', default=0.1, type=float,
+                    metavar='con_weight', help='con_weight', dest='con_weight')
+parser.add_argument('--reg_weight', '--reg_weight', default=0.7, type=float,
+                    metavar='reg_weight', help='reg_weight', dest='reg_weight')
+parser.add_argument('--temp_value', '--temp_value', default=1.382, type=float,
+                    metavar='temp_value', help='temp_value', dest='temp_value')
 parser.add_argument('--epochs', '--epoch_number', default=200, type=int,
                     metavar='epochs', help='training epochs', dest='epochs')
 parser.add_argument('--dp', '--data_path', default='..\\dataset\\amazon\\', type=str,
                     metavar='dp', help='the path of dataset', dest='dp')
 parser.add_argument('--gpu', default=0, type=int,
                     metavar='GPU', help='gpu number to use', dest='gpu')
-parser.add_argument('--bsz', default=512, type=int,
+parser.add_argument('--bsz', default=10240, type=int,
                     metavar='bsz', help='batch_size', dest='bsz')
 """
 如果是随机选择negative samples，那么neg__num不能为None
@@ -29,9 +35,11 @@ parser.add_argument('--bsz', default=512, type=int,
 def main():
     args = parser.parse_args()
     lr_params = f'lr-{args.lr}-'
-    reg_params = f'reg-{args.reg}-'
+    con_weight_params = f'con_weight-{args.con_weight}-'
+    reg_weight_params = f'reg_weight-{args.reg_weight}'
+    temp_value_params = f'temp_value-{args.temp_value}'
     bsz_params = f'bsz-{args.bsz}-'
-    filename = f'cr-{lr_params}-{reg_params}-{bsz_params}.txt'
+    filename = f'cr-no l3-{lr_params}-{con_weight_params}-{reg_weight_params}-{temp_value_params}-{bsz_params}.txt'
 
     if not os.path.exists(filename):
         open(filename, 'x')

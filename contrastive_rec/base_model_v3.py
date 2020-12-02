@@ -52,7 +52,7 @@ class Model(nn.Module):
         # 计算tp，阈值设置为0.0，即预测集中，值大于0的样例设置为1，小于0的样例 设置为0
         one = torch.ones_like(pre_ds)
         zero = torch.zeros_like(pre_ds)
-        boundary = torch.mean(pre_ds)
+        boundary = torch.mean(pre_ds) * 0.3
         pre_ds = torch.where(pre_ds > boundary, one, zero)
         positive_lens = torch.sum(labels, dim=1)
         negative_lens = torch.abs(torch.sum(labels - 1, dim=1))
@@ -76,7 +76,6 @@ class Model(nn.Module):
         metrics = list(scores.keys())
         metrics.sort()
         file_path = open(self.filename, 'a')
-        print(' '.join(['%s: %s' % (m, str(scores[m])) for m in metrics]))
         print(' '.join(['%s: %s' % (m, str(scores[m])) for m in metrics]), file=file_path)  #
         # self.logging.info(' '.join(['%s: %s' % (m,str(scores[m])) for m in metrics]))
 
